@@ -17,12 +17,12 @@ while True:
 
     # Threshold the HSV image to get only red colors
     mask = cv2.inRange(hsv, lower_red, upper_red)
-
+    cv2.imshow('mask', mask)
     # Find contours in the mask
     contours, _ = cv2.findContours(mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
 
     # Filter out small contours based on area
-    large_contours = [cnt for cnt in contours if cv2.contourArea(cnt) > 500]
+    large_contours = [cnt for cnt in contours if cv2.contourArea(cnt) > 100]
 
     # Draw contours on the original frame
     cv2.drawContours(frame, large_contours, -1, (0,255,0), 1)
@@ -34,7 +34,7 @@ while True:
     cv2.imshow('frame', frame)
 
     # Break the loop on 'q' key press
-    if cv2.waitKey(10) & 0xFF == ord('q'):
+    if cv2.waitKey(1) & 0xFF == ord('q'):
         break
 
 # Release the capture
