@@ -25,7 +25,7 @@ while True:
     large_contours = [cnt for cnt in contours if cv2.contourArea(cnt) > 500]
 
     # Draw contours on the original frame
-    cv2.drawContours(frame, large_contours, -1, (0,255,0), 3)
+    cv2.drawContours(frame, large_contours, -1, (0,255,0), 1)
 
     # Display the count of red objects
     print("Number of red objects:", len(large_contours))
@@ -34,7 +34,7 @@ while True:
     cv2.imshow('frame', frame)
 
     # Break the loop on 'q' key press
-    if cv2.waitKey(1) & 0xFF == ord('q'):
+    if cv2.waitKey(10) & 0xFF == ord('q'):
         break
 
 # Release the capture
