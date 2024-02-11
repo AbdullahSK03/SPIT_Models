@@ -1,40 +1,66 @@
-import pickle
-import numpy as np
+import os
 import librosa
+import numpy as np
+import pyaudio
+from keras.models import load_model
+import speech_recognition as sr
+from sklearn.preprocessing import LabelEncoder
 
-# Load the model from the pickle file
-with open('pickle_model.pkl', 'rb') as file:
-    model = pickle.load(file)
+# Load the model
+model = load_model('my_model.h5')
 
-# Define the function to extract features
-def extract_features(audio_data, sample_rate, max_pad_len=500):
-    audio_data = audio_data.astype(np.float32) / 32767.0
+# Initialize the LabelEncoder
+le = LabelEncoder()
+le.classes_ = np.array(['anger', 'disgust', 'fear', 'happiness', 'not Calm', 'sadness', 'surprise'])  # Assuming these are your classes
+
+CHUNK = 1024 
+FORMAT = pyaudio.paInt16
+CHANNELS = 2 
+RATE = 16000
+RECORD_SECONDS = 5
+p = pyaudio.PyAudio()
+stream = p.open(format=FORMAT,
+                channels=CHANNELS,
+                rate=RATE,
+                input=True,
+                frames_per_buffer=CHUNK)
+print("* recording")
+r = sr.Recognizer()
+with sr.Microphone(1,16000) as source:
+    print("Talk")
+    audio_text = r.listen(source)
+    print("Time over, thanks")
+try:
+    print("Text: "+r.recognize_google(audio_text))
+except:
+    print("Sorry, I did not get that")
+frames = []
+for i in range(0, int(RATE / CHUNK * RECORD_SECONDS)):
+    data = stream.read(CHUNK)
+    frames.append(np.frombuffer(data, dtype=np.int16))
+audio_data = np.hstack(frames)
+audio_data = audio_data.astype(np.float32) / 32767.0
+print("Input audio data: ", audio_data)
+
+def extract_features(audio_data, sample_rate, max_pad_len=12320):
     mfccs = librosa.feature.mfcc(y=audio_data, sr=sample_rate, n_mfcc=40)
     
-    # If the number of frames is less than max_pad_len, pad with zeros
-    if (mfccs.shape[1] < max_pad_len):
-        pad_width = max_pad_len - mfccs.shape[1]
-        mfccs = np.pad(mfccs, pad_width=((0, 0), (0, pad_width)), mode='constant')
-
-    # If the number of frames is more than max_pad_len, truncate the excess
-    elif (mfccs.shape[1] > max_pad_len):
-        mfccs = mfccs[:, :max_pad_len]
-
     # Flatten the array
     mfccs = mfccs.flatten()
 
+    # If the number of features is less than max_pad_len, pad with zeros
+    if len(mfccs) < max_pad_len:
+        mfccs = np.pad(mfccs, (0, max_pad_len - len(mfccs)))
+
+    # If the number of features is more than max_pad_len, truncate the excess
+    elif len(mfccs) > max_pad_len:
+        mfccs = mfccs[:max_pad_len]
+
     return mfccs
 
-# Assume we have a .wav file for inference
-file_path = r'C:\Users\ahmds\Desktop\SPIT\input\Actor_01\03-01-01-01-01-01-01.wav'
+features = extract_features(audio_data, RATE, max_pad_len=40)
+features = np.reshape(features, (1, 1, features.shape[0]))  # Reshape for model input
+emotion = model.predict(features)
+predicted_emotion = le.inverse_transform([np.argmax(emotion)])  # Convert one-hot to label
+print("Predicted emotion: ", predicted_emotion[0])
 
-# Load the audio file
-audio_data, sample_rate = librosa.load(file_path)
-
-# Extract features
-features = extract_features(audio_data, sample_rate)
-
-# Use the model for inference
-emotion = model.predict([features])
-
-print("Predicted emotion: ", emotion[0])
