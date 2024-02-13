@@ -1,0 +1,13 @@
+opencv-python
+pyaudio
+seaborn
+pandas
+numpy
+librosa
+joblib
+scikit-learn
+tensorflow
+keras
+cvzone
+streamlit
+langchain
