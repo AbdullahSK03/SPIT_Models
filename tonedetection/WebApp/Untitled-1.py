@@ -6,7 +6,7 @@ app = Flask(__name__)
 # Load the model
 model = load('model.joblib')
 
-@app.route('/', methods=['POST', 'GET'])
+@app.route('/predict', methods=['POST', 'GET'])
 def predict():
     # Get the data from the POST request.
     data = request.get_json(force=True)
