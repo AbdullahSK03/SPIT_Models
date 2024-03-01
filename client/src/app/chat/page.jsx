@@ -1,37 +1,64 @@
 "use client";
 
 import { useState } from 'react';
+import Image from 'next/image';
+
 
 export default function Home() {
-  const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
+  const [image, setImage] = useState(null);
+  const [response, setResponse] = useState('');
 
-  const sendMessage = (event) => {
-    event.preventDefault();
-    setMessages([...messages, input]);
-    setInput('');
+  const handleImageUpload = (event) => {
+    if (event.target.files.length > 0) {
+      const file = event.target.files[0];
+      if (file instanceof Blob) {
+        setImage(URL.createObjectURL(file));
+      } else {
+        console.error('Uploaded file is not a Blob or File object');
+      }
+    } else {
+      console.error('No file was uploaded');
+    }
+  };
+  
+  const handleSubmit = async (event) => {
+    // event.preventDefault();
+
+    const response = await fetch('http://localhost:8080/chat', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        input,
+        image
+      })
+    });
+    const responseData = await response.json();
+    setResponse(responseData.output);
+
+    // Here you would call the Google Gemini Pro Vision API with your input and image
+    // For now, we'll just set the response to be the input
+    setResponse(input);
   };
 
   return (
-    <div className="flex flex-col h-screen bg-gray-100">
-      <div className="overflow-auto p-4">
-        {messages.map((message, index) => (
-          <div key={index} className="p-2 bg-blue-500 text-white my-2 rounded">
-            {message}
-          </div>
-        ))}
-      </div>
-      <form onSubmit={sendMessage} className="m-2">
-        <input
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          type="text"
-          className="w-full p-2 border rounded"
-        />
-        <button type="submit" className="w-full p-2 bg-blue-500 text-white mt-2 rounded">
-          Send
-        </button>
+    <div>
+      <h1>Nutritionist AI 👩🏻‍⚕</h1>
+      <form onSubmit={handleSubmit}>
+        <label>
+          Input Prompt:
+          <input type="text" value={input} onChange={(e) => setInput(e.target.value)} />
+        </label>
+        <label>
+          Choose an image:
+          <input type="file" accept="image/*" onChange={handleImageUpload} />
+        </label>
+        {image && <Image src={image} width={200} height={200} alt="Uploaded" />}
+        <button type="submit" onSubmit={handleSubmit}>Calculate</button>
       </form>
+      {response && <div>{response}</div>}
     </div>
   );
 }
